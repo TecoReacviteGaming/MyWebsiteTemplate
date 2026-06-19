@@ -3,828 +3,625 @@
 <html lang="id">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SA Tools</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Crashlog Reader</title>
   <style>
-    @font-face {
-      font-family: 'bebasneue';
-      src: url('./BebasNeue-Regular.ttf') format('truetype');
-    }
-    @font-face {
-      font-family: 'beckett';
-      src: url('./beckett.ttf') format('truetype');
-    }
-    @font-face {
-      font-family: 'bankgothic';
-      src: url('./bankgothic-regular.ttf') format('truetype');
-    }:root {
-  --menu-color-default: rgb(120,145,190);
-  --menu-color-active: rgb(163,196,239);
+    #output, #backBtn, .footer-note {
+      opacity: 0;
+      display: none;
+      pointer-events: none;
+    }#output.show, #backBtn.show, .footer-note.show {
+  display: block;
+  animation: fadeIn 0.8s forwards;
+  pointer-events: auto;
+}
+
+#backBtn.show { display: inline-block; }
+
+#output.hide, #backBtn.hide, .footer-note.hide {
+  animation: fadeOut 0.8s forwards;
+  pointer-events: none;
+}
+
+@font-face {
+  font-family: 'BebasNeue';
+  src: url('./BebasNeue-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Sequel100Black';
+  src: url('./Sequel100Black-76.ttf') format('truetype');
 }
 
 body {
   margin: 0;
-  background: #000;
+  font-family: Arial, sans-serif;
+  background-color: #000;
+  color: #fff;
   min-height: 100vh;
-  font-family: 'bankgothic', sans-serif;
-  overflow: hidden;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-/* Gaya untuk Loading Screen */
-#initialLoader {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: #000;
+.menu-wrapper {
+  transform: translateY(0);
+  margin-top: -40px;   /* makin minus → makin naik */
+}
+
+.container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
-  transition: opacity 1s ease;
+  height: 100%;
 }
-.spinner {
-  width: 30px;
-  height: 30px;
-  border: 3px solid rgba(163, 196, 239, 0.3);
-  border-top-color: var(--menu-color-active);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+
+h1 {
+  font-size: 30px;
+  margin-bottom: 10px;
+  font-family: 'Sequel100Black', sans-serif;
+  text-shadow: 2px 2px 5px rgba(0,0,0,0.8)
+}
+
+label[for="fileInput"] {
+  margin-bottom: -10px;   
+  display: block;       
+  font-size: 14px;
+  font-weight: bold;
+  text-shadow: 2px 2px 5px rgba(0,0,0,0.8);
+}
+
+.uploader input[type="file"] {
+  margin-top: 0px;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+}
+
+.actions {
   margin-top: 15px;
 }
-@keyframes spin {
-  to { transform: rotate(360deg); }
+
+input[type="file"] {
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
 }
 
-#title {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  font-family: 'beckett', serif;
-  font-size: clamp(36px, 6vw, 60px);
-  color: var(--menu-color-active);
-  text-shadow: 2px 2px 4px #000;
-  white-space: nowrap;
-}
-
-#cornerLogo.back8 { position: absolute; top: 0; right: 0; height: 100px; }
-#cornerLogo.back3 { position: absolute; top: 0; right: 0; height: 200px; }
-#cornerLogo.back6 { position: absolute; top: 0; right: 0; height: 200px; }
-
-.menu {
-  position: absolute;
-  top: 55%;
-  left: 50%;
-  transform: translate(-50%, -50%) translateX(-11px);
-  font-size: clamp(22px, 4vw, 32px);
-  font-weight: bold;
-  text-transform: uppercase;
-  line-height: 2.2em;
-  white-space: nowrap;
-  display: none;
-}
-.menu.active { display: block; }
-
-.menu-item {
-  position: relative;
+button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 0;
+  font-weight: 700;
+  color: #fff;
+  background: #2563eb;
   cursor: pointer;
-  color: var(--menu-color-default);
-  transition: color 0.2s;
-  user-select: none;
-  text-align: center;
-  padding-left: 30px;
-  line-height: 2.0em;
-  transform: translateY(-30px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  font-family: Arial, sans-serif;
 }
-.menu-item.active { color: var(--menu-color-active); }
-
-#mainMenu .menu-item img.arrow {
-  display: none;
-  position: absolute;
-  left: -10px;
-  top: 85%;
-  transform: translateY(-50%);
-  height: 70px;
+button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.5);
 }
-#mainMenu .menu-item.active img.arrow { display: inline-block; }
-#mainMenu .menu-item img.arrow.arrow-options { left: 20px; top: 90%; }
-#mainMenu .menu-item img.arrow.arrow-credits { left: 25px; top: 90%; }
-
-#toolsMenu {
-  position: absolute;
-  top: 50%;
-  left: 40%;
-  transform: translate(-50%, -50%);
-  text-align: left;
-  font-size: clamp(20px, 3vw, 28px);
-  line-height: 2.2em;
-}
-#toolsMenu .menu-item img.arrow {
-  display: none;
-  position: absolute;
-  left: -10px;
-  top: 90%;
-  transform: translateY(-50%);
-  height: 70px;
-}
-#toolsMenu .menu-item.active img.arrow { display: inline-block; }
-
-#optionsMenu {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: left;
-  font-size: clamp(20px, 3vw, 28px);
-  line-height: 2.2em;
-}
-#optionsMenu .menu-item img.arrow {
-  display: none;
-  position: absolute;
-  left: -10px;
-  top: 90%;
-  transform: translateY(-50%);
-  height: 70px;
-}
-#optionsMenu .menu-item.active img.arrow { display: inline-block; }
-
-.option-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  min-width: 300px;
-  position: relative;
-}
-.toggle { cursor: pointer; color: var(--menu-color-default); }
-.toggle.active { color: var(--menu-color-active); }
-
-.volume-bar { display: flex; gap: 2px; cursor: pointer; }
-.volume-bar .level {
-  width: 12px;
-  height: 20px;
-  background: var(--menu-color-default);
-  transition: background 0.2s;
-}
-.volume-bar .level.active { background: var(--menu-color-active); }
-
-#toolsBack, #optionsBack {
-  position: absolute;
-  bottom: 100px;
-  right: 40px;
-  font-size: clamp(20px, 3vw, 28px);
-  cursor: pointer;
-  text-transform: uppercase;
-  color: var(--menu-color-default);
-  transition: color 0.2s;
-  display: none;
-  padding-left: 30px;
-}
-#toolsBack.active, #optionsBack.active { color: var(--menu-color-active); }
-
-.back-arrow {
-  height: 70px;
-  position: absolute;
-  left: -10px;
-  top: -50%;
-  transform: translateY(10%);
-  display: none;
+button:active {
+  transform: scale(0.97);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
 }
 
-#toolsBack.active .back-arrow,
-#optionsBack.active .back-arrow {
-  display: inline-block;
-}
-
-
-#cornerLogo.back2 { position: absolute; top: 0; right: 0; height: 200px; }
-
-#creditsMenu {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: left;
-  font-size: clamp(20px, 3vw, 28px);
-  line-height: 2.2em;
-}
-
-#creditsBack {
-  position: absolute;
-  bottom: 100px;
-  right: 40px;
-  font-size: clamp(20px, 3vw, 28px);
-  cursor: pointer;
-  text-transform: uppercase;
-  color: var(--menu-color-default);
-  transition: color 0.2s;
-  display: none;
-  padding-left: 30px;
-}
-#creditsBack.active { color: var(--menu-color-active); }
-#creditsBack.active .back-arrow { display: inline-block; }
-
-#creditsMenu {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  text-align: center;
-  font-size: clamp(16px, 2.5vw, 22px);
-  color: #bbb;
-  overflow: hidden;
-}
-
-#creditsWrapper {
+#output-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  animation: scrollUp 70s linear infinite;
+  align-items: center;
+  margin-top: 10px;
+  transform: translateY(-80px);
 }
 
-.credit-line {
-  opacity: 1;
-  animation: fadeOutTop 25s linear forwards;
-}
-
-.credit-line:nth-child(1) { animation-delay: 20s; }
-.credit-line:nth-child(2) { animation-delay: 21s; }
-.credit-line:nth-child(3) { animation-delay: 22s; }
-.credit-line:nth-child(4) { animation-delay: 23s; }
-.credit-line:nth-child(5) { animation-delay: 24s; }
-
-@keyframes scrollUp {
-  from { transform: translateY(25%); }
-  to   { transform: translateY(-120%); }
-}
-
-@keyframes fadeOutTop {
-  0%, 80% { opacity: 1; }
-  100% { opacity: 0; }
-}
-.credit-label {
-  color: #fff;          
-  font-weight: bold;    
-  margin-bottom: -5px;
-  font-family: Arial, sans-serif;
-  text-transform: none;
-}
-
-.credit-name {
-  color: #aaa;          
-  font-weight: bold;    
-  margin-bottom: -15px;
-  font-family: Arial, sans-serif;
-  text-transform: none;
-}
-.credits-section .credit-name:last-child {
-  margin-bottom: 0;
-}
-
-#footerBrand {
-  position: absolute;
-  bottom: 150px;
-  left: 50%;
-  transform: translateX(-45%);
-  font-family: 'bebasneue', sans-serif;
-  font-size: 10px;
-  color: var(--menu-color-active);
-  text-shadow: 2px 2px 4px #000;
-  letter-spacing: 2px;
-  animation: rgbColor 5s linear infinite;
-}
-
-@keyframes rgbColor {
-  0%   { filter: hue-rotate(0deg); }
-  100% { filter: hue-rotate(360deg); }
-}
-</style>
-</head>
-<body>
-    <div id="initialLoader">
-      <div style="font-size: 24px; color: var(--menu-color-active); font-family: 'bankgothic', sans-serif;">loading...</div>
-      <div class="spinner"></div>
-    </div>
-
-        <img id="touchCursor" src="Cursor.png" alt="cursor" style="
-  position: absolute;
-  width: 20px;
-  height: 20px;
+#output {
+  background: rgba(0, 0, 0, 0.6); /* sama kayak uploader */
+  padding: 15px;
+  border-radius: 12px;
+  width: 90vw;
+  max-width: 100vw;
+  max-height: 70vh;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  text-align: left;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  font-size: 14px;
+  line-height: 1.5;
   pointer-events: none;
   display: none;
-  z-index: 9999;
-">
-        <div id="footerBrand">- TecoReacvite -</div>
-    <div id="title">Main Menu</div>
-        <img src="back8.png" id="cornerLogo" class="back8" alt="Logo" />  <audio id="musicAudio" loop>
-    <source src="Music.mp3" type="audio/mpeg">
-    </audio> <audio id="creditsAudio" loop>
-    <source src="Credits.mp3" type="audio/mp3">
-    </audio> 
-    <div id="mainMenu" class="menu active">
-    <div class="menu-item" onclick="openTools()"><img src="arrow.png" class="arrow" alt=">"> Select Tools</div>
-    <div class="menu-item" onclick="openOptions()"><img src="arrow.png" class="arrow arrow-options" alt=">"> Options</div>
-    <div class="menu-item" onclick="openCredits()">
-    <img src="arrow.png" class="arrow arrow-credits" alt=">"> Credits
-    </div>
-    </div>  
-    <div id="toolsMenu" class="menu">
-    <div class="menu-item" onclick="openTransparanImage()"><img src="arrow.png" class="arrow" alt=">"> Transparan Image</div>
-    <div class="menu-item" onclick="openCrashlog()"><img src="arrow.png" class="arrow" alt=">"> Crashlog Reader</div>
-    </div>
-    <div id="toolsBack" onclick="backToMain()">
-    <img src="arrow.png" class="arrow back-arrow" alt=">"> Back
-    </div>  
-    <div id="optionsMenu" class="menu">
-    <div class="menu-item option-row" id="audioRow">
-     <img src="arrow.png" class="arrow" alt=">">
-    <span>Audio</span>
-    <span class="toggle" id="audioToggle">On</span>
-    </div>
-    <div class="menu-item option-row" id="volumeRow">
-      <img src="arrow.png" class="arrow" alt=">">
-      <span>Volume</span>
-      <span class="volume-bar" id="volumeBar">
-        <span class="level active"></span>
-        <span class="level"></span>
-        <span class="level"></span>
-        <span class="level"></span>
-        <span class="level"></span>
-        <span class="level"></span>
-        <span class="level"></span>
-        <span class="level"></span>
-      </span>
-    </div>
-  </div>
-  <div id="optionsBack" onclick="backToMain()">
-  <img src="arrow.png" class="arrow back-arrow" alt=">"> Back
-</div>
-
-<div id="creditsMenu" class="menu">
-  <div id="creditsWrapper">
-<div class="credits-section">
-  <div class="credit-label">Android Mod Loader</div>
-  <div class="credit-name">[=-KILL MAN-=] / RusJJ</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">CrashList Documented</div>
-  <div class="credit-name">ARM</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">Crashlist Translate</div>
-  <div class="credit-name">TWSVN</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">Custom Script & Integration</div>
-  <div class="credit-name">TWSVN</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">JavaScript & JSON Pioneer</div>
-  <div class="credit-name">Douglas Crockford</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">Creator of jQuery</div>
-  <div class="credit-name">John Resig</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">Front-end Evangelist</div>
-  <div class="credit-name">Paul Irish</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">Open Source & Inclusivity Advocate</div>
-  <div class="credit-name">Coraline Ada Ehmke</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">HTML Standard Founder</div>
-  <div class="credit-name">Tim Berners-Lee</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">CSS Creator</div>
-  <div class="credit-name">Håkon Wium Lie</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">Git Creator</div>
-  <div class="credit-name">Linus Torvalds</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">Node.js Original Author</div>
-  <div class="credit-name">Ryan Dahl</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">npm Founder</div>
-  <div class="credit-name">Isaac Z. Schlueter</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">React.js Creator</div>
-  <div class="credit-name">Jordan Walke</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">Vue.js Creator</div>
-  <div class="credit-name">Evan You</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">Angular Lead</div>
-  <div class="credit-name">Misko Hevery</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">GitHub Founders</div>
-  <div class="credit-name">Chris Wanstrath / PJ Hyett / Tom Preston-Werner</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">JavaScript Creator</div>
-  <div class="credit-name">Brendan Eich</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">Web Standards Organization</div>
-  <div class="credit-name">World Wide Web Consortium (W3C)</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">Open Source Community</div>
-  <div class="credit-name">Millions of Contributors Worldwide</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">Early Web Pioneer</div>
-  <div class="credit-name">Marc Andreessen</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">Mozilla & Firefox Advocate</div>
-  <div class="credit-name">Mitchell Baker</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">Creator of PHP</div>
-  <div class="credit-name">Rasmus Lerdorf</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">Creator of Python</div>
-  <div class="credit-name">Guido van Rossum</div>
-</div>
-
-<div class="credits-section">
-  <div class="credit-label">Special Thanks</div>
-  <div class="credit-name">OpenAI / ChatGPT</div>
-</div>
-  </div>
-</div>
-<div id="creditsBack" onclick="backToMain()">
-  <img src="arrow.png" class="arrow back-arrow" alt=">"> Back
-</div>
-
-  <script>
-    const menus = {
-      main: document.getElementById('mainMenu'),
-      tools: document.getElementById('toolsMenu'),
-      options: document.getElementById('optionsMenu'),
-      credits: document.getElementById('creditsMenu')
-    };
-
-    const touchCursor = document.getElementById("touchCursor");
-    const title = document.getElementById('title');
-    const cornerLogo = document.getElementById('cornerLogo');
-    const toolsBack = document.getElementById('toolsBack');
-    const optionsBack = document.getElementById('optionsBack');
-    const creditsBack = document.getElementById('creditsBack');
-    const creditsAudio = document.getElementById("creditsAudio");
-    const selectSound = new Audio("select.mp3");
-    const backSound   = new Audio("back.mp3");
-    function playSelect(){ try{ selectSound.currentTime=0; selectSound.play(); }catch(_){} }
-    function playBack(){ try{ backSound.currentTime=0; backSound.play(); }catch(_){} }
-
-    let audioCtx;
-let touchBuffer = null;
-let touchGain;
-let lastTouchTime = 0;
-
-// Load sekali saat awal
-async function loadTouchSound() {
-  try {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const response = await fetch("touch.mp3");
-    const arrayBuffer = await response.arrayBuffer();
-    touchBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-
-    // Gain untuk kontrol volume highlight
-    touchGain = audioCtx.createGain();
-    touchGain.gain.value = 0.5;
-    touchGain.connect(audioCtx.destination);
-} catch (e) {
-    console.error("Gagal load touch.mp3", e);
-  }
+}
+#output.show {
+  opacity: 1;
+  pointer-events: auto;
+  display: block;
 }
 
-function playTouch() {
-  if (!touchBuffer || !audioCtx || !touchGain) return;
-  const now = Date.now();
-  if (now - lastTouchTime < 80) return;
-  lastTouchTime = now;
-
-  const source = audioCtx.createBufferSource();
-  source.buffer = touchBuffer;
-  source.connect(touchGain);
-  source.start(0);
+#backBtn {
+  margin-top: 12px;
+  background: #2563eb;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  display: none;
+  pointer-events: none;
+}
+#backBtn.show {
+  display: inline-block;
+  opacity: 1;
+  pointer-events: auto;
 }
 
-// panggil sekali saat halaman siap
-loadTouchSound();
+.footer-note {
+  margin-top: 6px;
+  font-size: 14px;
+  color: #fff;
+  font-family: 'BebasNeue', sans-serif;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  display: none;
+  pointer-events: none;
+  text-shadow: 2px 2px 5px rgba(0,0,0,0.8);
+}
+.footer-note.show {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+}
 
-    // Cursor Touch
-    window.addEventListener("touchstart", e => {
-    const t = e.touches[0];
-    touchCursor.style.left = (t.clientX - 20) + "px";
-    touchCursor.style.top  = (t.clientY - 20) + "px";
-    touchCursor.style.display = "block";
-});
+.fadeout { animation: fadeOut 0.8s forwards; pointer-events: none; }
+.fadein  { animation: fadeIn  0.8s forwards; }
+@keyframes fadeOut { from {opacity: 1;} to {opacity: 0;} }
+@keyframes fadeIn  { from {opacity: 0;} to {opacity: 1;} }
 
-    window.addEventListener("touchmove", e => {
-    const t = e.touches[0];
-    touchCursor.style.left = (t.clientX - 20) + "px";
-    touchCursor.style.top  = (t.clientY - 20) + "px";
-});
+#fileError, #uploadWarning {
+  color: #ffffff;
+  margin-top: 10px;
+  font-size: 14px;
+  display: none;
+  text-shadow: 2px 2px 5px rgba(0,0,0,0.8);
+  font-weight: bold;
+}
 
-window.addEventListener("touchend", () => {
-  touchCursor.style.display = "none";
-});
+.highlight-error { color: rgb(255,36,36); font-weight: bold; }
+.highlight-problem { color: rgb(255,160,36); font-weight: bold; }
+.highlight-solution { color: rgb(168,255,5); font-weight: bold; }
+.highlight-note { color: rgb(214,214,214); font-style: italic; }
+.highlight-info { color: rgb(77, 208, 225); font-weight: bold; }
+.highlight-warning { color: rgb(250, 204, 21); font-weight: bold; }
+.highlight-generic { color: rgb(167, 139, 250); font-weight: bold; }
 
-let currentTarget = null;
+.spoiler {
+  background-color: rgb(64,64,64);
+  color: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  padding: 0 4px;
+}
 
-function getMenuItemAt(x, y) {
-  const items = document.querySelectorAll('.menu-item, #toolsBack, #optionsBack, #creditsBack');
-  for (let item of items) {
-    const rect = item.getBoundingClientRect();
-    if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-      return item;
+.spoiler.revealed {
+  color: inherit;
+}
+
+.credit {
+  margin-top: 25px;
+  font-size: 15px;
+  color: #fff;
+  font-family: 'BebasNeue', sans-serif;
+  text-shadow: 2px 2px 5px rgba(0,0,0,0.8);
+}
+#bgVideo {
+
+position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1; } </style>
+
+</head>
+<body>
+        <!-- Global Music -->
+<audio id="musicAudio" loop>
+  <source src="Music.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+  const musicAudio = document.getElementById("musicAudio");
+
+  function loadAndPlay() {
+    const savedOn = localStorage.getItem("audioOn");
+    const savedVolume = parseFloat(localStorage.getItem("audioVolume"));
+
+    if (!isNaN(savedVolume)) {
+      musicAudio.volume = savedVolume;
+    }
+
+    if (savedOn === "On") {
+      musicAudio.play().catch(() => {});
     }
   }
-  return null;
+
+  window.addEventListener("load", loadAndPlay);
+
+  document.body.addEventListener("click", () => {
+    if (localStorage.getItem("audioOn") === "On" && musicAudio.paused) {
+      musicAudio.play();
+    }
+  }, { once: true });
+</script>
+
+        <!-- Background Video -->
+<video autoplay muted loop playsinline id="bgVideo">
+  <source src="background1.mp4" type="video/mp4">
+</video>
+  <div class="container">
+    <div class="menu-wrapper">
+      <h1 id="title">Crashlog Reader</h1>
+      <div class="uploader" id="uploader">
+        <label for="fileInput">Upload file crashlog disini</label><br>
+        <input type="file" id="fileInput" accept=".txt">
+        <div id="fileError">File yang diupload tidak sesuai!</div>
+        <div id="uploadWarning">Harap upload file aml_crashlog.txt terlebih dahulu.</div>
+      </div>
+      <div class="actions" id="actions">
+        <button id="startBtn">Mulai</button>
+        <div class="credit">- TwentySeven -</div>
+      </div>
+    </div>
+    <div id="output-wrapper">
+      <div id="output"></div>
+      <div id="footerNote" class="footer-note">
+        Documented by ARM<br>15/07/2024
+      </div>
+      <button id="backBtn"></button>
+    </div>
+  </div>  <script>
+    let crashList = {};
+    let crashLogContent = "";
+    let currentTexts = {};
+
+     function parseSpoiler(text){
+  return text.replace(/\|\|(.*?)\|\|/g, (match, p1) => {
+    return `<span class="spoiler">${p1}</span>`;
+  });
 }
 
-window.addEventListener("touchmove", e => {
-  const t = e.touches[0];
-  const x = t.clientX, y = t.clientY;
-
-  touchCursor.style.left = (x - 20) + "px";
-  touchCursor.style.top  = (y - 20) + "px";
-
-  const target = getMenuItemAt(x, y);
-
-  if (target !== currentTarget) {
-    if (currentTarget) currentTarget.classList.remove("active");
-    currentTarget = target;
-
-    if (currentTarget) {
-  currentTarget.classList.add("active");
-        playTouch();
-}
+// listener biar bisa diklik
+document.addEventListener('click', function(e){
+  if(e.target.classList.contains('spoiler')){
+    e.target.classList.toggle('revealed');
   }
 });
 
-window.addEventListener("touchend", () => {
-  if (currentTarget) {
-  currentTarget.click();
-  currentTarget.classList.remove("active");
-  currentTarget = null;
-}
-touchCursor.style.display = "none";
-});
-
-    function openTools() {
-      menus.main.classList.remove('active');
-      menus.tools.classList.add('active');
-      toolsBack.style.display = 'block';
-      optionsBack.style.display = 'none';
-      creditsBack.style.display = 'none';
-      title.textContent = "Tools";
-      cornerLogo.src = "back3.png";
-      cornerLogo.className = "back3";
-      document.querySelectorAll('.menu-item, #toolsBack').forEach(i => i.classList.remove('active'));
-      toolsBack.classList.add('active');
-      playSelect();
+    function showTempMessage(el){
+      el.style.display = 'block';
+      el.classList.remove('fadeout');
+      void el.offsetWidth;
+      setTimeout(()=>{
+        el.classList.add('fadeout');
+        setTimeout(()=>{el.style.display='none';},3000);
+      },3000);
     }
 
-    function openOptions() {
-      menus.main.classList.remove('active');
-      menus.options.classList.add('active');
-      optionsBack.style.display = 'block';
-      toolsBack.style.display = 'none';
-      title.textContent = "Options";
-      cornerLogo.src = "back6.png";
-      cornerLogo.className = "back6";
-      document.querySelectorAll('.menu-item, #optionsBack').forEach(i => i.classList.remove('active'));
-      optionsBack.classList.add('active');
-      playSelect();
-    }
-
-    function openCredits() {
-      menus.main.classList.remove('active');
-      menus.credits.classList.add('active');
-      creditsBack.style.display = 'block';
-      toolsBack.style.display = 'none';
-      optionsBack.style.display = 'none';
-      title.textContent = "Credits";
-      cornerLogo.src = "back2.png";
-      cornerLogo.className = "back2";
-      document.querySelectorAll('.menu-item, #creditsBack').forEach(i => i.classList.remove('active'));
-      creditsBack.classList.add('active');
-      playSelect();
-
-   if (audioToggle.textContent === "On") {
-      musicAudio.pause();
-      creditsAudio.currentTime = 0;
-      creditsAudio.volume = musicAudio.volume;
-      creditsAudio.play();
-     }
-    }
-
-   function backToMain() {
-      menus.tools.classList.remove('active');
-      menus.options.classList.remove('active');
-      menus.credits.classList.remove('active');
-      menus.main.classList.add('active');
-      toolsBack.style.display = 'none';
-      optionsBack.style.display = 'none';
-      creditsBack.style.display = 'none';
-      title.textContent = "Main Menu";
-      cornerLogo.src = "back8.png";
-      cornerLogo.className = "back8";
-      const first = menus.main.querySelector('.menu-item');
-      if (first) {
-      document.querySelectorAll('.menu-item, #toolsBack, #optionsBack, #creditsBack').forEach(i => i.classList.remove('active'));
-      first.classList.add('active');
-    }
-    playBack();
-
-    creditsAudio.pause();
-    if (audioToggle.textContent === "On") {
-         }
-   }
-
-    const musicAudio = document.getElementById("musicAudio");
-    const audioRow = document.getElementById("audioRow");
-    const audioToggle = document.getElementById("audioToggle");
-    const volumeRow = document.getElementById("volumeRow");
-    const volumeBar = document.getElementById("volumeBar");
-    const levels = [...volumeBar.querySelectorAll(".level")];
-
-    function playMusic() {
+    async function loadCrashList(){
       try {
-      if (audioToggle.textContent === "On") {
-             }
-      } catch(e){}
+        const lang = navigator.language || navigator.userLanguage || '';
+        let fileName = lang.startsWith('id') ? 'Crash_List - 2.00 ID.txt' : 'Crash_List - 2.00.txt';
+        const res = await fetch(fileName);
+        const text = await res.text();
+        parseCrashList(text);
+      } catch(e){ console.error('Gagal load Crash_List:', e); }
     }
 
-    function openCrashlog() { 
-  playSelect(); 
-  saveAudioSettings(); // Tambahkan ini agar status "On" terbawa
-  setTimeout(() => { window.location.href = "Crashlog.html"; }, 100); 
-}
-
-function openTransparanImage() { 
-  playSelect(); 
-  saveAudioSettings(); // Tambahkan ini agar status "On" terbawa
-  setTimeout(() => { window.location.href = "Transparent image.html"; }, 100); 
-}
-
-
-    document.querySelectorAll('.menu-item, #toolsBack, #optionsBack, #creditsBack').forEach(item => {
-      item.addEventListener('click', () => {
-      document.querySelectorAll('.menu-item, #toolsBack, #optionsBack, #creditsBack').forEach(i => i.classList.remove('active'));
-      item.classList.add('active');
-      if (item.id === "toolsBack" || item.id === "optionsBack" || item.id === "creditsBack") {
-      playBack();
-    } else {
-      playSelect();
-    }
+    function parseCrashList(text){
+      const normalized = text.replace(/\r\n/g, '\n');
+      const blockRegex = /(^\s*(?:Error:|Kesalahan:)[\s\S]*?)(?=^\s*(?:Error:|Kesalahan:)|\Z)/gm;
+      const blocks = normalized.match(blockRegex) || [];
+      blocks.forEach(block => {
+        const lines = block.replace(/\n+$/,'').split('\n');
+        const codeLine = lines.find(l => /0x[0-9A-Fa-f]+/.test(l)) || '';
+        const codes = (codeLine.match(/0x[0-9A-Fa-f]+/g) || []).map(c => c.trim());
+        codes.forEach(code => crashList[code] = lines);
       });
-    });
-
-    function setVolumeFromIndex(index) {
-      levels.forEach((lvl, i) => {
-        lvl.classList.toggle("active", i <= index);
-      });
-      const volume = (index + 1) / levels.length;
-      musicAudio.volume = volume;
-      document.querySelectorAll('.menu-item, #toolsBack, #optionsBack, #creditsBack').forEach(el => el.classList.remove('active'));
-      volumeRow.classList.add('active');
     }
 
-    setVolumeFromIndex(levels.length - 1);
+    function renderCrashLines(lines){
+      const out = document.getElementById('output');
+      const backBtn = document.getElementById('backBtn');
+      out.innerHTML = '';
 
-    levels.forEach((lvl, i) => {
-      lvl.addEventListener("click", () => setVolumeFromIndex(i));
-    });
+      let lineIndex = 0, currentTextNode = null;
+      let lastDetails = null;
 
-    let isDragging = false;
-    function updateVolumeFromEvent(e) {
-      const rect = volumeBar.getBoundingClientRect();
-      const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-      let index = Math.floor((x / rect.width) * levels.length);
-      index = Math.max(0, Math.min(index, levels.length - 1));
-      setVolumeFromIndex(index);
-    }
+      function classifyAndBuild(line){
+        const container = document.createElement('div');
+        const m = line.match(/^[^:]+:/);
 
-    volumeBar.addEventListener("mousedown", e => { isDragging = true; playSelect(); updateVolumeFromEvent(e); });
-    window.addEventListener("mousemove", e => { if (isDragging) updateVolumeFromEvent(e); });
-    window.addEventListener("mouseup", () => { isDragging = false; });
+        if(m){
+          const label = m[0];
+          const rest = line.slice(label.length).trim();
+          const labelLower = label.toLowerCase();
 
-    volumeBar.addEventListener("touchstart", e => { isDragging = true; playSelect(); updateVolumeFromEvent(e); });
-    window.addEventListener("touchmove", e => { if (isDragging) updateVolumeFromEvent(e); });
-    window.addEventListener("touchend", () => { isDragging = false; });
+          if(labelLower.includes('problem') || labelLower.includes('masalah')){
+            const details = document.createElement('details');
+            const summary = document.createElement('summary');
+            summary.textContent = label;
+            summary.className = 'highlight-problem';
+            details.appendChild(summary);
 
-    function saveAudioSettings() {
-    localStorage.setItem("audioOn", audioToggle.textContent);
-    localStorage.setItem("audioVolume", musicAudio.volume);
-    }
+            const content = document.createElement('div');
+            content.style.marginLeft = "12px";
+            content.innerHTML = parseSpoiler(rest);
+            details.appendChild(content);
 
-    audioRow.addEventListener("click", () => {
-    const isOn = (audioToggle.textContent === "On");
-    if (isOn) {
-    audioToggle.textContent = "Off";
-    musicAudio.pause();
-    } else {
-     audioToggle.textContent = "On";
-    }
-     audioToggle.classList.toggle("active");
-     document.querySelectorAll('.menu-item, #toolsBack, #optionsBack, #creditsBack')
-    .forEach(i => i.classList.remove('active'));
-     audioRow.classList.add('active');
-     playSelect();
-     saveAudioSettings();
-});
-
-    function setVolumeFromIndex(index) {
-     levels.forEach((lvl, i) => {
-     lvl.classList.toggle("active", i <= index);
-});
-
-    const volume = (index + 1) / levels.length;
-    musicAudio.volume = volume;
-    document.querySelectorAll('.menu-item, #toolsBack, #optionsBack, #creditsBack')
-   .forEach(el => el.classList.remove('active'));
-    volumeRow.classList.add('active');
-    saveAudioSettings();
-    }
-
-    // SISTEM PRELOAD SEMUA ASSET (Mencegah Delay)
-    const imagesToPreload = ["back8.png", "back3.png", "back6.png", "back2.png", "arrow.png", "Cursor.png"];
-    let loadedImages = 0;
-    const loadStatus = document.getElementById('loadStatus');
-
-        function preloadAssets() {
-      imagesToPreload.forEach(src => {
-        const img = new Image();
-        img.src = src;
-        img.onload = img.onerror = () => {
-          loadedImages++;
-          // Tulisan persentase sudah dihapus dari sini
-          if (loadedImages === imagesToPreload.length) {
-            startApp();
+            lastDetails = details;
+            lastDetails.lastContent = content;
+            return {container: details};
           }
-        };
-      });
-    }
 
+          if(labelLower.includes('solution') || labelLower.includes('solusi')){
+            const solDetails = document.createElement('details');
+            const solSummary = document.createElement('summary');
+            solSummary.textContent = label;
+            solSummary.className = 'highlight-solution';
+            solDetails.appendChild(solSummary);
 
-    function startApp() {
-  const loader = document.getElementById('initialLoader');
-  setTimeout(() => {
-    loader.style.opacity = '0';
-    setTimeout(() => {
-      loader.style.display = 'none';
-      backToMain(); // Ini akan memunculkan menu utama
+            const content = document.createElement('div');
+            content.style.marginLeft = "12px";
+            content.innerHTML = parseSpoiler(rest);
+            solDetails.appendChild(content);
+            solDetails.lastContent = content;
 
-      // JANGAN tambahkan musicAudio.play() di sini. 
-      // Biarkan kosong agar menu utama tetap sunyi.
+            if(lastDetails){
+              lastDetails.appendChild(solDetails);
+            }
 
-      loadSettings(); // Tetap panggil ini agar volume tersimpan
-    }, 1000);
-  }, 500);
+            lastDetails = solDetails;
+            return {container: document.createDocumentFragment()};
+          }
+
+          if(labelLower.includes('error') || labelLower.includes('kesalahan')){
+            const spanLabel = document.createElement('span');
+            spanLabel.className = 'highlight-error';
+            spanLabel.textContent = label;
+
+            const spanCode = document.createElement('span');
+            spanCode.style.color = '#ffffff';
+            if(rest) spanCode.textContent = " " + rest;
+
+            container.appendChild(spanLabel);
+            container.appendChild(spanCode);
+
+            lastDetails = null;
+            return {container};
+          }
+
+          if(labelLower.includes('fyi') || labelLower.includes('note') || labelLower.includes('catatan')){
+            const note = document.createElement('div');
+            note.style.marginLeft = "12px";
+            note.textContent = label + " " + rest;
+
+            if(lastDetails){
+              lastDetails.appendChild(note);
+              return {container: document.createDocumentFragment()};
+            } else {
+              container.appendChild(note);
+              return {container};
+            }
+          }
+
+          // === Fallback: label baru/umum, selalu terpisah dan bisa di-klik ===
+const genDetails = document.createElement('details');
+const genSummary = document.createElement('summary');
+genSummary.textContent = label;
+
+// styling sesuai jenis label umum
+if (/warning|peringatan/.test(labelLower)) {
+  genSummary.className = 'highlight-warning';
+} else if (/info|informasi|about|tentang/.test(labelLower)) {
+  genSummary.className = 'highlight-info';
+} else {
+  genSummary.className = 'highlight-generic';
 }
 
+genDetails.appendChild(genSummary);
 
-    // Jalankan preload saat window ready
-    window.addEventListener('load', preloadAssets);
+// isi konten (ngumpet dulu, muncul setelah klik)
+if (rest) {
+  const content = document.createElement('div');
+  content.style.marginLeft = "12px";
+  content.innerHTML = parseSpoiler(rest);
+  genDetails.appendChild(content);
+  genDetails.lastContent = content;
+}
 
-  </script></body>
+// selalu panel terpisah
+lastDetails = genDetails;
+return { container: genDetails };
+        }
+
+        if(lastDetails && line.trim() !== ""){
+          if(lastDetails.lastContent){
+            lastDetails.lastContent.textContent += " " + line.trim();
+          } else {
+            const extra = document.createElement('div');
+            extra.style.marginLeft = "12px";
+            extra.textContent = line.trim();
+            lastDetails.appendChild(extra);
+            lastDetails.lastContent = extra;
+          }
+          return {container: document.createDocumentFragment()};
+        }
+
+        currentTextNode = document.createTextNode(line);
+        container.appendChild(currentTextNode);
+        return {container};
+      }
+
+      function nextLine(){
+        if(lineIndex >= lines.length){
+          document.getElementById('footerNote').classList.add('show');
+          backBtn.textContent = currentTexts.backBtn;
+          backBtn.classList.add('show');
+          return;
+        }
+        const raw = lines[lineIndex];
+        const {container} = classifyAndBuild(raw);
+        out.appendChild(container);
+        lineIndex++;
+        nextLine();
+      }
+
+      nextLine();
+    }
+
+    function setUIText(lang){
+      let texts = {
+        uploadWarning: 'Harap upload file aml_crashlog.txt terlebih dahulu.',
+        uploadLabel:   'Upload file crashlog disini',
+        fileError:     'File yang diupload tidak sesuai!',
+        startBtn:      'Mulai',
+        backBtn:       'Kembali',
+        notFound:      'Tidak ditemukan kode crash yang cocok.'
+      };
+      if((lang||'').startsWith('en')){
+        texts = {
+          uploadWarning: 'Please upload aml_crashlog.txt first.',
+          uploadLabel:   'Upload crashlog file here',
+          fileError:     'The uploaded file is not valid!',
+          startBtn:      'Start',
+          backBtn:       'Back',
+          notFound:      'No matching crash code found.'
+        };
+      }
+      currentTexts = texts;
+      document.querySelector("label[for='fileInput']").textContent = texts.uploadLabel;
+      document.getElementById('fileError').textContent = texts.fileError;
+      document.getElementById('uploadWarning').textContent = texts.uploadWarning;
+      document.getElementById('startBtn').textContent = texts.startBtn;
+    }
+
+    document.getElementById('fileInput').addEventListener('change', function(e){
+      const file = e.target.files[0];
+      const fileError = document.getElementById('fileError');
+      const uploadWarning = document.getElementById('uploadWarning');
+      if(file){
+        if(file.name !== 'aml_crashlog.txt'){
+          showTempMessage(fileError);
+          crashLogContent = '';
+          uploadWarning.style.display = 'none';
+          return;
+        }
+        fileError.style.display = 'none';
+        uploadWarning.style.display = 'none';
+        const reader = new FileReader();
+        reader.onload = ev => { crashLogContent = ev.target.result; };
+        reader.readAsText(file);
+      }
+    });
+
+    document.getElementById('startBtn').addEventListener('click', ()=>{
+      const out = document.getElementById('output');
+      const uploadWarning = document.getElementById('uploadWarning');
+      const footer = document.getElementById('footerNote');
+      const title = document.getElementById('title');
+      const uploader = document.getElementById('uploader');
+      const actions = document.getElementById('actions');
+      const backBtn = document.getElementById('backBtn');
+      const fileInput = document.getElementById('fileInput');
+
+      out.classList.remove('show');
+      out.innerHTML = '';
+      footer.classList.remove('show');
+      backBtn.classList.remove('show');
+
+      const hasChosenFile = fileInput && fileInput.files && fileInput.files.length > 0;
+      const isRightName = hasChosenFile && fileInput.files[0].name === 'aml_crashlog.txt';
+      const hasContent = !!crashLogContent;
+
+      if (!hasChosenFile || !isRightName || !hasContent) {
+        showTempMessage(uploadWarning);
+        return;
+      }
+
+      title.classList.add('fadeout');
+      uploader.classList.add('fadeout');
+      actions.classList.add('fadeout');
+
+      setTimeout(()=>{
+        out.classList.add('show');
+
+        let found = false;
+        for (const code in crashList) {
+          if (crashLogContent.includes(code)) {
+            renderCrashLines(crashList[code]);
+            found = true;
+            break;
+          }
+        }
+
+        if (!found) {
+          out.textContent = currentTexts.notFound;
+          footer.classList.add('show');
+          backBtn.textContent = currentTexts.backBtn;
+          setTimeout(() => backBtn.classList.add('show'), 100);
+        }
+      }, 1000);
+    });
+
+    document.getElementById('backBtn').addEventListener('click', ()=>{
+      const out = document.getElementById('output');
+      const footer = document.getElementById('footerNote');
+      const title = document.getElementById('title');
+      const uploader = document.getElementById('uploader');
+      const actions = document.getElementById('actions');
+      const backBtn = document.getElementById('backBtn');
+      const fileInput = document.getElementById('fileInput');
+      const fileError = document.getElementById('fileError');
+      const uploadWarning = document.getElementById('uploadWarning');
+
+      out.classList.remove('show');
+      out.classList.add('hide');
+      backBtn.classList.remove('show');
+      backBtn.classList.add('hide');
+      footer.classList.remove('show');
+      footer.classList.add('hide');
+
+      setTimeout(()=>{
+        out.classList.remove('hide');
+        backBtn.classList.remove('hide');
+        footer.classList.remove('hide');
+      }, 800);
+
+      crashLogContent = '';
+      if (fileInput) fileInput.value = '';
+      if (fileError) fileError.style.display = 'none';
+      if (uploadWarning) uploadWarning.style.display = 'none';
+
+      setTimeout(()=>{
+        title.classList.remove('fadeout');
+        uploader.classList.remove('fadeout');
+        actions.classList.remove('fadeout');
+
+        title.classList.add('fadein');
+        uploader.classList.add('fadein');
+        actions.classList.add('fadein');
+
+        setTimeout(()=>{
+          title.classList.remove('fadein');
+          uploader.classList.remove('fadein');
+          actions.classList.remove('fadein');
+        }, 400);
+      }, 400);
+    });
+
+    setUIText(navigator.language || '');
+    loadCrashList();
+  </script>
+</body>
 </html>
